@@ -1,321 +1,96 @@
+
 #!/usr/bin/env python3
 """
-Ecosystem Health Index (EHI) Calculator
+Ecosystem Health Index (EHI) Report Generator
 
-This script calculates EHI scores based on collected metrics data.
-It implements the scoring rubric for all five dimensions of the EHI.
+This script generates visual reports based on EHI scores.
 """
 
 import os
 import json
 import argparse
 import pandas as pd
-import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.cm as cm
+import seaborn as sns
 from datetime import datetime
 
 
-class EHICalculator:
-    """Calculates EHI scores based on the defined scoring rubric."""
+class EHIReportGenerator:
+    """Generates visual reports for Ecosystem Health Index data."""
     
-    def __init__(self):
-        """Initialize the EHI calculator."""
-        self.dimensions = [
-            "trust_reliability",
-            "engagement_activation",
-            "reach_distribution",
-            "enablement_dev_experience",
-            "ecosystem_strategy"
-        ]
-        self.scores = {dim: 0 for dim in self.dimensions}
-        self.total_score = 0
+    def __init__(self, scores_file):
+        """Initialize the report generator with scores data."""
+        with open(scores_file, 'r') as f:
+            self.scores_data = json.load(f)
+        
+        self.company_name = self.scores_data.get("company_name", "Unknown")
+        self.dimensions = self.scores_data.get("dimensions", {})
+        self.total_score = self.scores_data.get("total_score", 0)
+        
+        # Set visual style
+        sns.set_style("whitegrid")
+        plt.rcParams['font.family'] = 'sans-serif'
+        plt.rcParams['font.sans-serif'] = ['Arial', 'Helvetica', 'DejaVu Sans']
+        plt.rcParams['figure.figsize'] = (12, 9)
     
-    def calculate_trust_reliability(self, metrics):
-        """Calculate Trust & Reliability dimension score (0-20)."""
-        score = 0
+    def create_radar_chart(self):
+        """Create a radar chart for the dimension scores."""
+        # Prepare data
+        dimensions = list(self.dimensions.keys())
+        dim_labels = [dim.replace('_', ' ').title() for dim in dimensions]
+        values = [self.dimensions[dim] for dim in dimensions]
         
-        # Review Rating Average (0-4 points)
-        if "review_rating_avg" in metrics:
-            rating = metrics["review_rating_avg"]
-            if rating >= 4.5:
-                score += 4
-            elif rating >= 4.0:
-                score += 3
-            elif rating >= 3.5:
-                score += 2
-            elif rating >= 3.0:
-                score += 1
+        # To create a complete circle, we need to close the plot
+        values.append(values[0])
+        dim_labels.append(dim_labels[0])
         
-        # Uptime/Status Transparency (0-4 points)
-        if "has_status_page" in metrics:
-            if metrics["has_status_page"]:
-                score += 2
-                if metrics.get("uptime_percentage", 0) >= 99.9:
-                    score += 2
-                elif metrics.get("uptime_percentage", 0) >= 99.5:
-                    score += 1
+        # Calculate angle for each dimension
+        angles = [n / float(len(dimensions)) * 2 * 3.14159 for n in range(len(dimensions))]
+        angles += angles[:1]  # Close the loop
         
-        # Security Disclosure Process (0-4 points)
-        if "security_policy_score" in metrics:
-            sec_score = metrics["security_policy_score"]
-            score += min(sec_score, 4)
+        # Create plot
+        fig, ax = plt.subplots(figsize=(10, 10), subplot_kw=dict(polar=True))
         
-        # Public Roadmap Clarity (0-4 points)
-        if "roadmap_transparency" in metrics:
-            rm_score = metrics["roadmap_transparency"]
-            score += min(rm_score, 4)
+        # Draw dimension lines
+        plt.xticks(angles[:-1], dim_labels[:-1], size=12)
         
-        # Community Sentiment (0-4 points)
-        if "sentiment_score" in metrics:
-            sentiment = metrics["sentiment_score"]
-            if sentiment >= 0.8:
-                score += 4
-            elif sentiment >= 0.6:
-                score += 3
-            elif sentiment >= 0.4:
-                score += 2
-            elif sentiment >= 0.2:
-                score += 1
+        # Draw the chart
+        ax.plot(angles, values, linewidth=2, linestyle='solid', color='#3498db')
+        ax.fill(angles, values, alpha=0.25, color='#3498db')
         
-        self.scores["trust_reliability"] = min(score, 20)
-        return self.scores["trust_reliability"]
+        # Customize chart
+        ax.set_theta_offset(3.14159 / 2)  # Start from top
+        ax.set_theta_direction(-1)  # Go clockwise
+        
+        # Set y-axis limits and labels
+        plt.ylim(0, 20)
+        plt.yticks([5, 10, 15, 20], ['5', '10', '15', '20'], color='grey', size=10)
+        
+        # Add title
+        plt.title(f"Ecosystem Health Index - {self.company_name}", size=20, pad=20)
+        
+        # Add total score in the center
+        plt.annotate(f"Total Score: {self.total_score}/100", xy=(0.5, 0.5), 
+                     xycoords='figure fraction', ha='center', va='center', 
+                     fontsize=24, fontweight='bold')
+        
+        return fig
     
-    def calculate_engagement_activation(self, metrics):
-        """Calculate Engagement & Activation dimension score (0-20)."""
-        score = 0
+    def create_bar_chart(self):
+        """Create a horizontal bar chart for the dimension scores."""
+        # Prepare data
+        dimensions = list(self.dimensions.keys())
+        dim_labels = [dim.replace('_', ' ').title() for dim in dimensions]
+        values = [self.dimensions[dim] for dim in dimensions]
         
-        # GitHub Activity (0-4 points)
-        if all(k in metrics for k in ["total_stars", "total_forks", "total_prs"]):
-            github_activity = (
-                min(metrics["total_stars"] / 100, 10) +
-                min(metrics["total_forks"] / 50, 10) +
-                min(metrics["total_prs"] / 20, 10)
-            ) / 7.5  # Normalize to 0-4 scale
-            score += min(round(github_activity), 4)
+        # Create color gradient based on scores
+        colors = plt.cm.YlGnBu([(v/20) * 0.8 + 0.2 for v in values])
         
-        # Developer Forum Activity (0-4 points)
-        if "forum_activity_score" in metrics:
-            forum_score = metrics["forum_activity_score"]
-            score += min(forum_score, 4)
+        # Create plot
+        fig, ax = plt.subplots(figsize=(12, 8))
+        bars = ax.barh(dim_labels, values, color=colors)
         
-        # Integration Usage Signals (0-4 points)
-        if "api_usage_growth" in metrics:
-            usage_growth = metrics["api_usage_growth"]
-            if usage_growth >= 50:  # 50% growth or more
-                score += 4
-            elif usage_growth >= 25:
-                score += 3
-            elif usage_growth >= 10:
-                score += 2
-            elif usage_growth >= 0:
-                score += 1
-        
-        # Community Contribution Rate (0-4 points)
-        if "contribution_rate" in metrics:
-            contrib_rate = metrics["contribution_rate"]
-            score += min(round(contrib_rate), 4)
-        
-        # Event Participation (0-4 points)
-        if "event_participation_score" in metrics:
-            event_score = metrics["event_participation_score"]
-            score += min(event_score, 4)
-        
-        self.scores["engagement_activation"] = min(score, 20)
-        return self.scores["engagement_activation"]
-    
-    def calculate_reach_distribution(self, metrics):
-        """Calculate Reach & Distribution dimension score (0-20)."""
-        score = 0
-        
-        # Integration Directory Size (0-4 points)
-        if "integration_count" in metrics:
-            int_count = metrics["integration_count"]
-            if int_count >= 100:
-                score += 4
-            elif int_count >= 50:
-                score += 3
-            elif int_count >= 20:
-                score += 2
-            elif int_count >= 5:
-                score += 1
-        
-        # Marketplace Presence (0-4 points)
-        if "marketplace_presence_score" in metrics:
-            mp_score = metrics["marketplace_presence_score"]
-            score += min(mp_score, 4)
-        
-        # Partner Tier Structure (0-4 points)
-        if "partner_program_sophistication" in metrics:
-            pp_score = metrics["partner_program_sophistication"]
-            score += min(pp_score, 4)
-        
-        # Geographic Distribution (0-4 points)
-        if "geographic_coverage_score" in metrics:
-            geo_score = metrics["geographic_coverage_score"]
-            score += min(geo_score, 4)
-        
-        # Ecosystem Mentions (0-4 points)
-        if "ecosystem_mention_count" in metrics:
-            mention_count = metrics["ecosystem_mention_count"]
-            if mention_count >= 50:
-                score += 4
-            elif mention_count >= 25:
-                score += 3
-            elif mention_count >= 10:
-                score += 2
-            elif mention_count >= 5:
-                score += 1
-        
-        self.scores["reach_distribution"] = min(score, 20)
-        return self.scores["reach_distribution"]
-    
-    def calculate_enablement_dev_experience(self, metrics):
-        """Calculate Enablement & Developer Experience dimension score (0-20)."""
-        score = 0
-        
-        # Documentation Completeness (0-4 points)
-        if "documentation_score" in metrics:
-            doc_score = metrics["documentation_score"]
-            score += min(doc_score, 4)
-        
-        # API Quality Score (0-4 points)
-        if "api_quality_score" in metrics:
-            api_score = metrics["api_quality_score"]
-            score += min(api_score, 4)
-        
-        # Time-to-Hello-World (0-4 points)
-        if "time_to_hello_world_mins" in metrics:
-            ttl = metrics["time_to_hello_world_mins"]
-            if ttl <= 5:
-                score += 4
-            elif ttl <= 15:
-                score += 3
-            elif ttl <= 30:
-                score += 2
-            elif ttl <= 60:
-                score += 1
-        
-        # Developer Resources (0-4 points)
-        if "developer_resources_score" in metrics:
-            res_score = metrics["developer_resources_score"]
-            score += min(res_score, 4)
-        
-        # Support Accessibility (0-4 points)
-        if "support_accessibility_score" in metrics:
-            sup_score = metrics["support_accessibility_score"]
-            score += min(sup_score, 4)
-        
-        self.scores["enablement_dev_experience"] = min(score, 20)
-        return self.scores["enablement_dev_experience"]
-    
-    def calculate_ecosystem_strategy(self, metrics):
-        """Calculate Ecosystem Strategy & Evolution dimension score (0-20)."""
-        score = 0
-        
-        # Platform Extension Points (0-4 points)
-        if "extension_point_count" in metrics:
-            ext_count = metrics["extension_point_count"]
-            if ext_count >= 10:
-                score += 4
-            elif ext_count >= 5:
-                score += 3
-            elif ext_count >= 3:
-                score += 2
-            elif ext_count >= 1:
-                score += 1
-        
-        # Ecosystem Leadership (0-4 points)
-        if "ecosystem_leadership_score" in metrics:
-            lead_score = metrics["ecosystem_leadership_score"]
-            score += min(lead_score, 4)
-        
-        # Ecosystem Investment (0-4 points)
-        if "ecosystem_investment_score" in metrics:
-            inv_score = metrics["ecosystem_investment_score"]
-            score += min(inv_score, 4)
-        
-        # Adaptability Evidence (0-4 points)
-        if "adaptability_score" in metrics:
-            adapt_score = metrics["adaptability_score"]
-            score += min(adapt_score, 4)
-        
-        # Strategic Alignment (0-4 points)
-        if "strategic_alignment_score" in metrics:
-            align_score = metrics["strategic_alignment_score"]
-            score += min(align_score, 4)
-        
-        self.scores["ecosystem_strategy"] = min(score, 20)
-        return self.scores["ecosystem_strategy"]
-    
-    def calculate_total_score(self, metrics):
-        """Calculate the total EHI score based on all dimensions."""
-        # Calculate individual dimension scores
-        self.calculate_trust_reliability(metrics)
-        self.calculate_engagement_activation(metrics)
-        self.calculate_reach_distribution(metrics)
-        self.calculate_enablement_dev_experience(metrics)
-        self.calculate_ecosystem_strategy(metrics)
-        
-        # Calculate total score (sum of all dimensions)
-        self.total_score = sum(self.scores.values())
-        
-        return {
-            "dimensions": self.scores,
-            "total_score": self.total_score,
-            "calculated_at": datetime.now().isoformat()
-        }
-    
-    def save_scores(self, company_name, output_path):
-        """Save calculated scores to a JSON file."""
-        os.makedirs(os.path.dirname(output_path), exist_ok=True)
-        
-        result = {
-            "company_name": company_name,
-            "dimensions": self.scores,
-            "total_score": self.total_score,
-            "calculated_at": datetime.now().isoformat()
-        }
-        
-        with open(output_path, 'w') as f:
-            json.dump(result, f, indent=2)
-        
-        print(f"Scores saved to {output_path}")
-
-
-def main():
-    """Main execution function."""
-    parser = argparse.ArgumentParser(description='Calculate EHI scores')
-    parser.add_argument('metrics_file', help='JSON file containing collected metrics')
-    parser.add_argument('--company', required=True, help='Company name')
-    parser.add_argument('--output', default='data/ehi_scores.json', help='Output file path')
-    
-    args = parser.parse_args()
-    
-    try:
-        # Load metrics data
-        with open(args.metrics_file, 'r') as f:
-            data = json.load(f)
-        
-        metrics = data.get("metrics", {})
-        
-        # Calculate scores
-        calculator = EHICalculator()
-        scores = calculator.calculate_total_score(metrics)
-        
-        # Save scores
-        calculator.save_scores(args.company, args.output)
-        
-        # Print scores to console
-        print(f"\nEHI Scores for {args.company}:")
-        print(f"Total Score: {calculator.total_score}/100")
-        for dim, score in calculator.scores.items():
-            print(f"  {dim.replace('_', ' ').title()}: {score}/20")
-        
-    except Exception as e:
-        print(f"Error: {str(e)}")
-        return 1
-    
-    return 0
-
-
-if __name__ == "__main__":
-    exit(main())
+        # Add data labels
+        for bar in bars:
+            width = bar.get_width()
