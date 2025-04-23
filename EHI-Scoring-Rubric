@@ -1,0 +1,69 @@
+# Ecosystem Health Index (EHI) Scoring Rubric
+
+Each of the five EHI pillars is scored out of **20 points**, based on **five core aspects**, each worth up to **4 points**. This structure ensures a consistent, objective, and automatable approach to evaluating ecosystem maturity.
+
+---
+
+## 1. Partner Ecosystem (0–20)
+
+| Aspect                         | Description                                                                                  |
+|-------------------------------|----------------------------------------------------------------------------------------------|
+| Public Partner Listings       | Quantity of named partners listed on official website or directories                         |
+| Strategic Integrations        | Presence of high-value or deeply integrated partners                                         |
+| Co-Marketing Evidence         | Blog posts, webinars, campaigns with partners                                                |
+| Marketplace Presence          | Listings on platforms like Salesforce AppExchange, AWS Marketplace                          |
+| Integration Hub Depth         | API marketplaces or integration centers (e.g., Zapier, Workato)                              |
+
+---
+
+## 2. Developer Ecosystem (0–20)
+
+| Aspect                         | Description                                                                                  |
+|-------------------------------|----------------------------------------------------------------------------------------------|
+| API & SDK Availability        | Clear, public access to APIs, SDKs, and developer onboarding                                 |
+| Developer Portal Quality      | Features such as sandboxes, changelogs, tutorials                                            |
+| GitHub Activity               | Stars, forks, commits, contributors, and recent commits                                      |
+| Open Source Projects          | Number and impact of open source tools maintained                                            |
+| Developer Event Participation | Involvement in hackathons, conferences, meetups                                              |
+
+---
+
+## 3. Customer Ecosystem (0–20)
+
+| Aspect                         | Description                                                                                  |
+|-------------------------------|----------------------------------------------------------------------------------------------|
+| Case Studies & Testimonials   | Depth and breadth of real customer stories                                                   |
+| Review Site Scores            | Ratings on G2, Capterra, TrustRadius                                                         |
+| Community Platforms           | Active user forums, Slack/Discord groups, support portals                                    |
+| Referenceable Customers       | Named customers actively promoting product                                                   |
+| Retention/Churn Signals       | Indirect signs such as renewal rates, support complaints, or product praise                  |
+
+---
+
+## 4. Employee Ecosystem (0–20)
+
+| Aspect                         | Description                                                                                  |
+|-------------------------------|----------------------------------------------------------------------------------------------|
+| Glassdoor Rating              | Average rating and review tone                                                               |
+| LinkedIn Headcount Trend      | YoY headcount growth or decline                                                              |
+| Hiring Momentum               | Number and seniority of open positions                                                       |
+| Employee Advocacy             | Social posting volume by employees                                                           |
+| DEI & Engagement Initiatives  | Public DEI statements, ERG groups, awards, or internal culture initiatives                   |
+
+---
+
+## 5. Community Ecosystem (0–20)
+
+| Aspect                         | Description                                                                                  |
+|-------------------------------|----------------------------------------------------------------------------------------------|
+| Open Source Ecosystem         | Contributions to external community or ecosystem standards                                   |
+| Thought Leadership            | Presence in media, blogs, interviews, keynote talks                                          |
+| Standards Participation       | Membership in orgs like W3C, IEEE, ISO                                                       |
+| Social Engagement             | Followers + engagement rate on Twitter/X, LinkedIn, YouTube                                 |
+| Event Hosting or Sponsorship  | Active role in community events (host, sponsor, organize)                                    |
+
+---
+
+Each company’s **total EHI Score** is the sum of the five pillar scores, ranging from **0 to 100**.
+
+Next step: scripts to automate scoring for each signal using publicly available sources.
