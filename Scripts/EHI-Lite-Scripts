@@ -1,0 +1,164 @@
+# EHI Lite Scoring Scripts (One script per EHI pillar)
+# Note: These are pseudocode templates using publicly accessible data sources.
+# API keys or scrapers may be needed depending on implementation.
+
+import requests
+import re
+from bs4 import BeautifulSoup
+import json
+
+# Helper function for normalizing scores to 0–4
+
+def normalize(value, thresholds):
+    for i, threshold in enumerate(thresholds):
+        if value < threshold:
+            return i
+    return 4
+
+# ----------------------
+# 1. Partner Ecosystem
+# ----------------------
+def score_partner_ecosystem(domain):
+    score = 0
+
+    # 1. Public Partner Listings (simulated count)
+    partner_page = requests.get(f"https://{domain}/partners").text
+    partner_count = partner_page.count("partner")
+    score += normalize(partner_count, [3, 10, 20, 40])
+
+    # 2. Strategic Integrations (simulate with keyword checks)
+    if any(x in partner_page for x in ["Salesforce", "AWS", "HubSpot"]):
+        score += 4
+    else:
+        score += 1
+
+    # 3. Co-Marketing (presence of co-authored blogs)
+    blog_page = requests.get(f"https://{domain}/blog").text
+    score += normalize(blog_page.count("webinar"), [1, 3, 5, 10])
+
+    # 4. Marketplace Listings (dummy API query or manual scrape)
+    # Placeholder: Assume found in one listing
+    score += 2
+
+    # 5. Integration Hub (Zapier presence)
+    zapier = requests.get(f"https://zapier.com/apps/{domain}")
+    score += 4 if zapier.status_code == 200 else 1
+
+    return score
+
+# ----------------------
+# 2. Developer Ecosystem
+# ----------------------
+def score_developer_ecosystem(github_org):
+    score = 0
+
+    # 1. Public API & SDK Availability (manual scrape or known URL check)
+    api_docs = requests.get(f"https://{github_org}.github.io/docs").status_code == 200
+    score += 4 if api_docs else 1
+
+    # 2. Developer Portal Maturity
+    score += 3  # Placeholder
+
+    # 3. GitHub Activity
+    stars = requests.get(f"https://api.github.com/orgs/{github_org}/repos").json()
+    total_stars = sum(repo.get("stargazers_count", 0) for repo in stars)
+    score += normalize(total_stars, [10, 50, 200, 500])
+
+    # 4. Open Source Projects
+    score += normalize(len(stars), [1, 5, 10, 20])
+
+    # 5. Developer Events
+    score += 2  # Placeholder
+
+    return score
+
+# ----------------------
+# 3. Customer Ecosystem
+# ----------------------
+def score_customer_ecosystem(domain):
+    score = 0
+
+    # 1. Case Studies
+    cs_page = requests.get(f"https://{domain}/customers").text
+    score += normalize(cs_page.count("case study"), [1, 3, 5, 10])
+
+    # 2. G2 or Capterra reviews (simulate)
+    score += 3  # Placeholder
+
+    # 3. Community Forum (detect presence)
+    score += 4 if "community" in cs_page or "slack" in cs_page else 1
+
+    # 4. Referenceability (known logos)
+    if any(x in cs_page for x in ["Nike", "IBM", "Google"]):
+        score += 4
+    else:
+        score += 1
+
+    # 5. Churn/Support Sentiment (advanced: analyze support forums or Reddit)
+    score += 2  # Placeholder
+
+    return score
+
+# ----------------------
+# 4. Employee Ecosystem
+# ----------------------
+def score_employee_ecosystem(company_name):
+    score = 0
+
+    # 1. Glassdoor Reviews (requires API or scrape)
+    score += 3  # Placeholder
+
+    # 2. LinkedIn Headcount (simulate)
+    score += 2  # Placeholder
+
+    # 3. Hiring Momentum (detect job board presence)
+    jobs = requests.get(f"https://{company_name}.jobs").status_code == 200
+    score += 4 if jobs else 1
+
+    # 4. Employee Advocacy (LinkedIn posts by employees)
+    score += 2  # Placeholder
+
+    # 5. DEI/Engagement Programs
+    score += 2  # Placeholder
+
+    return score
+
+# ----------------------
+# 5. Community Ecosystem
+# ----------------------
+def score_community_ecosystem(domain, github_org):
+    score = 0
+
+    # 1. Open Source Contributions (repeat from dev)
+    stars = requests.get(f"https://api.github.com/orgs/{github_org}/repos").json()
+    total_stars = sum(repo.get("stargazers_count", 0) for repo in stars)
+    score += normalize(total_stars, [10, 50, 200, 500])
+
+    # 2. Thought Leadership (count blog articles or press mentions)
+    score += 3  # Placeholder
+
+    # 3. Standards Org Participation
+    score += 1  # Placeholder
+
+    # 4. Social Media Presence (followers via LinkedIn, X)
+    score += 2  # Placeholder
+
+    # 5. Event Hosting or Sponsorship
+    score += 3  # Placeholder
+
+    return score
+
+# Example: Running full EHI Lite report
+
+def run_ehi_lite(domain, github_org, company_name):
+    return {
+        "partner_ecosystem": score_partner_ecosystem(domain),
+        "developer_ecosystem": score_developer_ecosystem(github_org),
+        "customer_ecosystem": score_customer_ecosystem(domain),
+        "employee_ecosystem": score_employee_ecosystem(company_name),
+        "community_ecosystem": score_community_ecosystem(domain, github_org),
+    }
+
+# Sample test run:
+# scores = run_ehi_lite("example.com", "exampleorg", "Example Inc")
+# print(json.dumps(scores, indent=2))
